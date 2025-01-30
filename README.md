@@ -1,8 +1,3 @@
-
-[[_TOC_]]
-
---------------------------------------------------------------------------------------------------------
-
 # Description
 
 The tool identifies, segments and classifies roofs falling within the specified Area of Interest, basing on surface aspect computed from DSM and using footprints to define roof outer limits. Segmented roof parts are labelled with respect to 4 aspect classes, corresponding to NE, SE, SW and NW. The implemented technique is derived from the work described in this paper https://towardsdatascience.com/estimating-solar-panel-output-with-open-source-data-bbca6ea1f523 
