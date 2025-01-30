@@ -3,53 +3,51 @@
 
 --------------------------------------------------------------------------------------------------------
 
-# Release v0.9 (30-08-2024)
+# Description
 
-`identificazione_falde_v0.9.model3`
+The tool identifies, segments and classifies roofs falling within the specified Area of Interest, basing on surface aspect computed from DSM and using footprints to define roof outer limits. Segmented roof parts are labelled with respect to 4 aspect classes, corresponding to NE, SE, SW and NW. The implemented technique is derived from the work described in this paper https://towardsdatascience.com/estimating-solar-panel-output-with-open-source-data-bbca6ea1f523 
 
-
-## Input data
+# Input data requirements
 
 * Area of Interest (AoI)
 * Building footprints
 * Digital Surface Model (DSM)
 
+# Output data requirements
 
-## Output attributes
+Vector segmentation of roof parts, having the following attributes:
 
-* **orientamento_classe**: 1 = NE, 2 = SE, 3 = SW, 4 = NW
-* **aspect_mean (esposizione media)**: orientamento medio della falda in gradi da Nord verso Est
-* **slope_mean (pendenza media)**: pendenza media falda, in percentuale (0 = orizzontale, 100 = a 45°, crescendo fino a infinito = verticale) 
-* **area**: area della proiezione orizzontale della falda
+* orientamento: average roof part aspect classification with respect to cardinal directions 
+* orientamento_gradi: average roof part aspect in degrees from North to East
+* pendenza_gradi: average roof part slope in percentage (0 = horizontal, 100 = at 45°, increasing to infinity = vertical)
+* area_mq: area of the horizontal projection of the roof part
 
+# Objective
 
-## Implementazione
+Segment building footprints into sub-parts, basing on their average slope, in order to be enable further analyses on: roof part visibility from the ground, roof part average irradiation.
 
-* utilizzare il tool 'clip raster by extent' per clippare il layer raster "DSM" rispetto al layer vettoriale "AoI"
-* utilizzare il tool 'estrai/ritaglia da estensione' per clippare il layer vettoriale "footprints" rispetto al layer vettoriale "AoI"
-* utilizzare il tool "buffer" sul layer vettoriale "footprints" per applicare un margine di 5 metri ed essere sicuri di includere tutta l'estensione delle falde
-* utilizzare il tool "dissolve" sul layer vettoriale "footprints" bufferizzato
-* estrarre il layer raster "DSM" clippato sul layer vettoriale "footprints" bufferizzato e dissolto, utilizzando il tool "clip raster with mask" (aggiungere opzione "keep input resolution" e deselezionare "match the extent"). Questo per eliminare il "rumore" che genererebbero gli altri elementi nei passi successivi
-* con questo DSM ridotto ai soli edifici bufferizzati
-   * calcolare l'orientamento cardinale delle falde (in gradi) attraverso il tool "GDAL aspect" 
-   * calcolare la pendenza delle falde (in percentuale) attraverso il tool "GDAL slope" 
-* classificare i valori di aspect con lo strumento "raster calculator": 
-   * orientamento_classe = (("aspect@1" = 360) OR ("aspect@1"  <= 90)) * 1 + 
-   * (("aspect@1" >= 90) AND ("aspect@1" < 180)) * 2 +
-   * (("aspect@1" >= 180) AND ("aspect@1" < 270)) * 3 +
-   * (("aspect@1" >= 270) AND ("aspect@1" < 360)) * 4
-* sul risultato precedente, utilizzare il tool "sieve" impostando la soglia a 5 per eliminare i cluster troppo piccoli
-* sul risultato precedente, utilizzare il tool "poligonizza (da raster a vettore) con l'obiettivo di avere un poligono per falda in base al valore omogeneo di aspect per pixel contigui della stessa falda 
-* utilizzare il tool 'clip' per clippare il layer vettoriale "falde" appena ottenuto rispetto al layer vettoriale "AoI" ritagliato
-* determinare i seguenti attributi sintetici da associare alle singole falde:
-   * aspect_mean: valore medio del layer raster "Aspect" sul layer vettoriale di output "Falde" ottenuto con il tool "statistiche zonali"  
-   * slope_mean: valore medio del layer raster "Slope" sul layer vettoriale di output "Falde" ottenuto con il tool "statistiche zonali"
-   * area falda: area della proiezione orizzontale della falda, ottenuto con il tool "aggiungi attributi della geometria" sul layer "Falde" 
+# Use of resource
 
-
-## Possibili migliorie
-
-* Per gestire il problema delle falde che cadono comunque in zone di confine di classe si può provare a fare due diverse e parallele classificazioni a 4 classi, la seconda leggermente ruotata rispetto alla prima, confrontando/fondendo poi i risultati edificio per edificio, tenendo "la soluzione migliore". Possibile spunto che indica due diverse classificazioni ruotate di 45° luna dall'altra: https://www.youtube.com/watch?v=W5ls8LjXeH8&t=777s
-
+* use the “Clip raster from extent” tool to clip the “DSM” raster layer to the “AoI– Area of Interest” vector layer
+* use the “clip” tool to clip the input “Building footprint” vector layer to the “AoI– Area of Interest” vector layer
+* use the “buffer” tool on the “footprints” vector layer to apply a 5 meter buffer and be sure to include the entire extension of the slopes
+* use the “dissolve” tool on the buffered “footprints” vector layer
+* extract the clipped “DSM” raster layer on the buffered and dissolved “footprints” vector layer, using the “clip raster with mask” tool (add the “keep input resolution” option and uncheck “match the extent”). This is to eliminate the “noise” that the other elements would generate in the subsequent steps
+* with this DSM reduced to only the buffered buildings
+   * calculate the cardinal orientation of the slopes (in degrees) using the “GDAL aspect” tool
+   * calculate the slope of the slopes (in percentage) through the "GDAL slope" tool
+* classify the aspect values with the "raster calculator" tool:
+   * (logical_or(A == 360, A <= 90)) * 1 + ((A >= 90) * (A < 180)) * 2 + ((A >= 180) * (A < 270)) * 3 + ((A >= 270) * (A < 360)) * 4* 
+* on the previous result, use the "sieve" tool by setting the threshold to 5 to eliminate the clusters that are too small
+* on the previous result, use the "polygonize (from raster to vector)" tool with the aim of having a polygon per slope based on the homogeneous aspect value for contiguous pixels of the same slope
+* use the "clip" tool to clip the "roof parts" vector layer just obtained from the polygonization tool with respect to the previously clipped vector layer obtained
+* use the "Dissolve adjacent polygons" plugin to eliminate the small clippings
+* determine the following attributes to associate with the individual roofs:
+   * orientation_degrees: average value of the "Aspect" raster layer on the "Roof" output vector layer obtained with the "zonal statistics" tool
+   * slope_degrees: average value of the "Slope" raster layer on the "Roof" output vector layer obtained with the "zonal statistics" tool
+   * roof area: area of the horizontal projection of the roof, obtained with the "add geometry attributes" tool on the "Roof" layer
+* use the "reorganize fields" tool to eliminate and reclassify the fields intended for the final "roof segmentation" vector layer
+* Possible improvements:
+   * To manage the problem of roofs that still fall in class boundary zones, you can try to make two different and parallel 4-class classifications, the second slightly rotated with respect to the first, then comparing/merging the results building by building, keeping "the best solution". Possible clue indicating two different classifications rotated 45° from each other: https://www.youtube.com/watch?v=W5ls8LjXeH8&t=777s 
 
 --------------------------------------------------------------------------------------------------------
