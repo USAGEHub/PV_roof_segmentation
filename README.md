@@ -19,27 +19,27 @@ Vector segmentation of roof parts, having the following attributes:
 
 * orientamento: average roof part aspect classification with respect to cardinal directions 
 * orientamento_gradi: average roof part aspect in degrees from North to East
-* pendenza_gradi: average roof part slope in percentage (0 = horizontal, 100 = at 45°, increasing to infinity = vertical)
+* pendenza_gradi: average roof part slope in percentage (0° = horizontal, 90° = vertical)
 * area_mq: area of the horizontal projection of the roof part
 
 # Objective
 
-Segment building footprints into sub-parts, basing on their average slope, in order to be enable further analyses on: roof part visibility from the ground, roof part average irradiation.
+Segment building footprints into sub-parts, basing on their average slope, in order to enable further analyses on: roof part visibility from the ground, roof part average irradiation.
 
 # Use of resource
 
 * use the “Clip raster from extent” tool to clip the “DSM” raster layer to the “AoI– Area of Interest” vector layer
 * use the “clip” tool to clip the input “Building footprint” vector layer to the “AoI– Area of Interest” vector layer
-* use the “buffer” tool on the “footprints” vector layer to apply a 5 meter buffer and be sure to include the entire extension of the slopes
+* use the “buffer” tool on the “footprints” vector layer to apply a 5 meter buffer and be sure to include the entire extension of the roofs
 * use the “dissolve” tool on the buffered “footprints” vector layer
 * extract the clipped “DSM” raster layer on the buffered and dissolved “footprints” vector layer, using the “clip raster with mask” tool (add the “keep input resolution” option and uncheck “match the extent”). This is to eliminate the “noise” that the other elements would generate in the subsequent steps
 * with this DSM reduced to only the buffered buildings
-   * calculate the cardinal orientation of the slopes (in degrees) using the “GDAL aspect” tool
-   * calculate the slope of the slopes (in percentage) through the "GDAL slope" tool
+   * calculate the cardinal orientation of the roof parts (in degrees) using the “GDAL aspect” tool
+   * calculate the slope of the roof parts (in percentage) through the "GDAL slope" tool
 * classify the aspect values with the "raster calculator" tool:
    * (logical_or(A == 360, A <= 90)) * 1 + ((A >= 90) * (A < 180)) * 2 + ((A >= 180) * (A < 270)) * 3 + ((A >= 270) * (A < 360)) * 4* 
 * on the previous result, use the "sieve" tool by setting the threshold to 5 to eliminate the clusters that are too small
-* on the previous result, use the "polygonize (from raster to vector)" tool with the aim of having a polygon per slope based on the homogeneous aspect value for contiguous pixels of the same slope
+* on the previous result, use the "polygonize (from raster to vector)" tool with the aim of having a polygon per roof part based on the homogeneous aspect value for contiguous pixels
 * use the "clip" tool to clip the "roof parts" vector layer just obtained from the polygonization tool with respect to the previously clipped vector layer obtained
 * use the "Dissolve adjacent polygons" plugin to eliminate the small clippings
 * determine the following attributes to associate with the individual roofs:
